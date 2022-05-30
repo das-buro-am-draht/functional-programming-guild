@@ -22,9 +22,17 @@
                 (pp/pprint req)
                 (str "Request Object: " req))})
 
+(defn chat-handler [request]
+  (server/with-channel request channel
+    (server/on-close channel (fn [status] (println "channel closed: " status)))
+    (server/on-receive channel (fn [data] ;; echo it back
+                          (println "channel echo: " data)
+                          (server/send! channel data)))))
+
 (defroutes app-routes
   (GET "/" [] simple-body-page)
   (GET "/request" [] request-example)
+  (GET "/ws" [] chat-handler) 
   (route/not-found "Error, page not found!"))
 
 (defn -main
