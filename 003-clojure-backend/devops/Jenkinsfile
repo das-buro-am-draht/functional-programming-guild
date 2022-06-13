@@ -1,0 +1,76 @@
+#!groovy
+
+node() {
+
+  def wd = "devops"
+  def IMAGE_TAG="latest"
+
+  def propertiesFile = "${wd}/pipeline.properties"
+  def properties
+
+  def k8sYaml = "devops/deploy-dbad.yaml"
+  def NAMESPACE = "backend-services"
+  def HOST = "fpguild003.kumosan.intern.dasburo.com"
+
+  currentBuild.result = "SUCCESS"
+
+  try {
+    stage ('Checkout') {
+        checkout([
+            $class: 'GitSCM',
+            branches: [[name: "${BRANCH}"]],
+            doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+            extensions: scm.extensions,
+            userRemoteConfigs: scm.userRemoteConfigs
+        ])
+    }
+
+    stage ("Setup") {
+      echo "${propertiesFile}"
+      sh "cat ${propertiesFile}"
+      properties = readProperties file: "${propertiesFile}"
+      echo "${properties}"
+    }
+
+    stage ('Docker build') {
+        // delete old docker contexts
+        sh "rm -rf target/docker"
+
+        echo "Building Image with tag: ${IMAGE_TAG}"
+
+        sh "docker build -t fpguild003 -f 003-clojure-backend/Dockerfile ."
+    }
+
+    stage ('Docker push') {
+      sh "docker tag ${properties.IMAGE_NAME}:latest ${properties.DOCKER_REGISTRY}/${properties.IMAGE_REPOSITORY}/${properties.IMAGE_NAME}:${IMAGE_TAG}"
+      sh "docker push ${properties.DOCKER_REGISTRY}/${properties.IMAGE_REPOSITORY}/${properties.IMAGE_NAME}:${IMAGE_TAG}"
+
+      // TODO: Handling für latest - wird auch im deploy-dbad.yaml definiert
+      sh "docker tag ${properties.IMAGE_NAME}:latest ${properties.DOCKER_REGISTRY}/${properties.IMAGE_REPOSITORY}/${properties.IMAGE_NAME}:latest"
+      sh "docker push ${properties.DOCKER_REGISTRY}/${properties.IMAGE_REPOSITORY}/${properties.IMAGE_NAME}:latest"
+    }
+
+    stage ('Kubernetes deploy') {
+        sh "cat ${k8sYaml} | sed \"s/{{NAMESPACE}}/${NAMESPACE}/g\" | sed \"s/{{HOST}}/${HOST}/g\" > ${k8sYaml}.a"
+        def finalYaml = "${k8sYaml}.a"
+
+    	try {
+	        sh "kubectl delete -f ${finalYaml}"
+      	} catch (ignore) {
+        	  print 'ignore'
+      	}
+        sh "kubectl apply -f  ${finalYaml}"
+    }
+}
+
+catch (err) {
+    currentBuild.result = "FAILURE"
+    print err;
+    throw err;
+ }
+
+ finally {
+    // Send-Email
+    email.notify(currentBuild, "${properties.EMAIL_NOTIFICATION}", "${properties.EMAIL_SUBJECT}")
+  }
+}

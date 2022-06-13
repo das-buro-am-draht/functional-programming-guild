@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fpguild003
+  namespace: {{NAMESPACE}}
+spec:
+  selector:
+    matchLabels:
+      app: fpguild003
+  template:
+    metadata:
+      labels:
+        app: fpguild003
+        namespace: {{NAMESPACE}}
+    spec:
+      containers:
+        - image: docker.dasburo.com:5000/dbad/fpguild003:latest
+          name: fpguild003
+          env:
+            - name: TEST
+              value: test
+          ports:
+            - containerPort: 3000
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{NAMESPACE}}
+  name: fpguild003
+  labels:
+    app: fpguild003
+spec:
+  selector:
+    app: fpguild003
+  ports:
+    - port: 8080
+      targetPort: 3000
+      protocol: TCP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fpguild003
+  namespace: {{NAMESPACE}}
+spec:
+  rules:
+    - host: {{HOST}}
+      http:
+        paths:
+          - backend:
+              serviceName: fpguild003
+              servicePort: 8080
+            path: /
