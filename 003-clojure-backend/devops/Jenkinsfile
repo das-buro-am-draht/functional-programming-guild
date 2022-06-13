@@ -2,13 +2,13 @@
 
 node() {
 
-  def wd = "devops"
+  def wd = "003-clojure-backend/devops"
   def IMAGE_TAG="latest"
 
   def propertiesFile = "${wd}/pipeline.properties"
   def properties
 
-  def k8sYaml = "devops/deploy-dbad.yaml"
+  def k8sYaml = "003-clojure-backend/devops/deploy-dbad.yaml"
   def NAMESPACE = "backend-services"
   def HOST = "fpguild003.kumosan.intern.dasburo.com"
 
@@ -38,7 +38,7 @@ node() {
 
         echo "Building Image with tag: ${IMAGE_TAG}"
 
-        sh "docker build -t fpguild003 -f 003-clojure-backend/Dockerfile ."
+        sh "docker build -t fpguild003 -f 003-clojure-backend/Dockerfile ./003-clojure-backend/"
     }
 
     stage ('Docker push') {
