@@ -15,10 +15,12 @@
                            (swap! channel-hub assoc user-channel request)
                            (server/on-close user-channel (fn [status] (println "channel closed: " status)))
                            (server/on-receive user-channel (fn [data]
-                                                          (println "channel echo: " data)
-                                                          (doseq [friend-channel (keys @channel-hub)]
-                                                                 (server/send! friend-channel data))
-                                                          (println "channel: " user-channel)))))
+                                                               (println "channel receive: " data)
+                                                               (doseq [friend-channel (keys @channel-hub)]
+                                                                      (println "friend channel: " friend-channel)
+                                                                      (server/send! friend-channel data)
+                                                                      )
+                                                               (println "channel: " user-channel)))))
 
 (defroutes app-routes
            (GET "/ws" [] chat-handler)
