@@ -11,18 +11,23 @@
 (def channel-hub (atom {}))
 
 (defn excludeOwnChannel [user-channel]
-  (filter (fn [channel-hub-item] (not= user-channel channel-hub-item)) (keys @channel-hub)))
+  (filter (fn [channel-hub-item]
+    (not= user-channel channel-hub-item))
+    (keys @channel-hub)))
 
 (defn chat-handler [request]
   (server/with-channel request user-channel
     (swap! channel-hub assoc user-channel request)
-    (server/on-close user-channel (fn [status] (println "channel closed: " status)))
+      (server/on-close user-channel (fn [status]
+        (println "channel closed: " status)
+        (swap! channel-hub dissoc user-channel)
+        (println "channel-hub: " channel-hub)))
     (server/on-receive user-channel (fn [data]
-                                      (println "channel receive: " data)
-                                      (doseq [friend-channel (excludeOwnChannel user-channel)]
-                                        (println "friend channel: " friend-channel)
-                                        (server/send! friend-channel data))
-                                      (println "channel: " user-channel)))))
+      (println "channel receive: " data)
+      (doseq [friend-channel (excludeOwnChannel user-channel)]
+        (println "friend channel: " friend-channel)
+        (server/send! friend-channel data))
+      (println "channel: " user-channel)))))
 
 (defroutes app-routes
   (GET "/ws" [] chat-handler)
