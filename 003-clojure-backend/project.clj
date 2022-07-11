@@ -12,6 +12,7 @@
                  [ring/ring-defaults "0.3.2"]
                  ; Clojure data.JSON library
                  [org.clojure/data.json "0.2.6"]]
+  :plugins [[lein-cljfmt "0.8.2"]]
   :main ^:skip-aot rest-demo.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all
