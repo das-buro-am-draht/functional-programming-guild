@@ -3,3 +3,6 @@
 *.iml
 /.lsp
 /.clj-kondo
+
+elm-stuff
+004-elm-fe/index.html
